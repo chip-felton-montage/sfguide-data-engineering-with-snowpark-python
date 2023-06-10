@@ -22,17 +22,13 @@ for (directory_path, directory_names, file_names) in os.walk(root_directory):
 
     # An app.toml file in the folder is our indication that this folder contains
     # a snowcli Snowpark App
-    if not "app.toml" in file_names:
+    if "app.toml" not in file_names:
 #        print(f"Skipping non-app folder {directory_path}")
         continue
 
     # Next determine what type of app it is
     app_type = "unknown"
-    if "local_connection.py" in file_names:
-        app_type = "procedure"
-    else:
-        app_type = "function"
-
+    app_type = "procedure" if "local_connection.py" in file_names else "function"
     # Finally deploy the app with the snowcli tool
     print(f"Found {app_type} app in folder {directory_path}")
     print(f"Calling snowcli to deploy the {app_type} app")

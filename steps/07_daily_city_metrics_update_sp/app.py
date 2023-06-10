@@ -12,8 +12,9 @@ import snowflake.snowpark.functions as F
 
 
 def table_exists(session, schema='', name=''):
-    exists = session.sql("SELECT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{}' AND TABLE_NAME = '{}') AS TABLE_EXISTS".format(schema, name)).collect()[0]['TABLE_EXISTS']
-    return exists
+    return session.sql(
+        f"SELECT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{schema}' AND TABLE_NAME = '{name}') AS TABLE_EXISTS"
+    ).collect()[0]['TABLE_EXISTS']
 
 def create_daily_city_metrics_table(session):
     SHARED_COLUMNS= [T.StructField("DATE", T.DateType()),
@@ -38,7 +39,7 @@ def create_daily_city_metrics_table(session):
 def merge_daily_city_metrics(session):
     _ = session.sql('ALTER WAREHOUSE HOL_WH SET WAREHOUSE_SIZE = XLARGE WAIT_FOR_COMPLETION = TRUE').collect()
 
-    print("{} records in stream".format(session.table('HARMONIZED.ORDERS_STREAM').count()))
+    print(f"{session.table('HARMONIZED.ORDERS_STREAM').count()} records in stream")
     orders_stream_dates = session.table('HARMONIZED.ORDERS_STREAM').select(F.col("ORDER_TS_DATE").alias("DATE")).distinct()
     orders_stream_dates.limit(5).show()
 
@@ -83,7 +84,7 @@ def merge_daily_city_metrics(session):
 
     cols_to_update = {c: daily_city_metrics_stg[c] for c in daily_city_metrics_stg.schema.names}
     metadata_col_to_update = {"META_UPDATED_AT": F.current_timestamp()}
-    updates = {**cols_to_update, **metadata_col_to_update}
+    updates = cols_to_update | metadata_col_to_update
 
     dcm = session.table('ANALYTICS.DAILY_CITY_METRICS')
     dcm.merge(daily_city_metrics_stg, (dcm['DATE'] == daily_city_metrics_stg['DATE']) & (dcm['CITY_NAME'] == daily_city_metrics_stg['CITY_NAME']) & (dcm['COUNTRY_DESC'] == daily_city_metrics_stg['COUNTRY_DESC']), \
@@ -95,11 +96,11 @@ def main(session: Session) -> str:
     # Create the DAILY_CITY_METRICS table if it doesn't exist
     if not table_exists(session, schema='ANALYTICS', name='DAILY_CITY_METRICS'):
         create_daily_city_metrics_table(session)
-    
+
     merge_daily_city_metrics(session)
 #    session.table('ANALYTICS.DAILY_CITY_METRICS').limit(5).show()
 
-    return f"Successfully processed DAILY_CITY_METRICS"
+    return "Successfully processed DAILY_CITY_METRICS"
 
 
 # For local debugging

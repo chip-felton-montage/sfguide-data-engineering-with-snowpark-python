@@ -14,8 +14,9 @@ import snowflake.snowpark.functions as F
 
 
 def table_exists(session, schema='', name=''):
-    exists = session.sql("SELECT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{}' AND TABLE_NAME = '{}') AS TABLE_EXISTS".format(schema, name)).collect()[0]['TABLE_EXISTS']
-    return exists
+    return session.sql(
+        f"SELECT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{schema}' AND TABLE_NAME = '{name}') AS TABLE_EXISTS"
+    ).collect()[0]['TABLE_EXISTS']
 
 def create_orders_table(session):
     _ = session.sql("CREATE TABLE HARMONIZED.ORDERS LIKE HARMONIZED.POS_FLATTENED_V").collect()
@@ -33,7 +34,7 @@ def merge_order_updates(session):
     # TODO: Is the if clause supposed to be based on "META_UPDATED_AT"?
     cols_to_update = {c: source[c] for c in source.schema.names if "METADATA" not in c}
     metadata_col_to_update = {"META_UPDATED_AT": F.current_timestamp()}
-    updates = {**cols_to_update, **metadata_col_to_update}
+    updates = cols_to_update | metadata_col_to_update
 
     # merge into DIM_CUSTOMER
     target.merge(source, target['ORDER_DETAIL_ID'] == source['ORDER_DETAIL_ID'], \
@@ -51,7 +52,7 @@ def main(session: Session) -> str:
     merge_order_updates(session)
 #    session.table('HARMONIZED.ORDERS').limit(5).show()
 
-    return f"Successfully processed ORDERS"
+    return "Successfully processed ORDERS"
 
 
 # For local debugging
