@@ -68,16 +68,14 @@ def get_snowsql_config(
     }
     try:
         config = configparser.ConfigParser(inline_comment_prefixes="#")
-        connection_path = 'connections.' + connection_name
+        connection_path = f'connections.{connection_name}'
 
         config.read(config_file_path)
         session_config = config[connection_path]
-        # Convert snowsql connection variable names to snowcli ones
-        session_config_dict = {
+        return {
             snowsql_to_snowpark_config_mapping[k]: v.strip('"')
             for k, v in session_config.items()
         }
-        return session_config_dict
     except Exception:
         raise Exception(
             "Error getting snowsql config details"

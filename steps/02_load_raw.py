@@ -25,15 +25,15 @@ TABLE_DICT = {
 def load_raw_table(session, tname=None, s3dir=None, year=None, schema=None):
     session.use_schema(schema)
     if year is None:
-        location = "@external.frostbyte_raw_stage/{}/{}".format(s3dir, tname)
+        location = f"@external.frostbyte_raw_stage/{s3dir}/{tname}"
     else:
-        print('\tLoading year {}'.format(year)) 
-        location = "@external.frostbyte_raw_stage/{}/{}/year={}".format(s3dir, tname, year)
-    
+        print(f'\tLoading year {year}')
+        location = f"@external.frostbyte_raw_stage/{s3dir}/{tname}/year={year}"
+
     # we can infer schema using the parquet read option
     df = session.read.option("compression", "snappy") \
                             .parquet(location)
-    df.copy_into_table("{}".format(tname))
+    df.copy_into_table(f"{tname}")
 
 # SNOWFLAKE ADVANTAGE: Warehouse elasticity (dynamic scaling)
 
@@ -44,7 +44,7 @@ def load_all_raw_tables(session):
         tnames = data['tables']
         schema = data['schema']
         for tname in tnames:
-            print("Loading {}".format(tname))
+            print(f"Loading {tname}")
             # Only load the first 3 years of data for the order tables at this point
             # We will load the 2022 data later in the lab
             if tname in ['order_header', 'order_detail']:
@@ -58,10 +58,10 @@ def load_all_raw_tables(session):
 def validate_raw_tables(session):
     # check column names from the inferred schema
     for tname in POS_TABLES:
-        print('{}: \n\t{}\n'.format(tname, session.table('RAW_POS.{}'.format(tname)).columns))
+        print(f"{tname}: \n\t{session.table(f'RAW_POS.{tname}').columns}\n")
 
     for tname in CUSTOMER_TABLES:
-        print('{}: \n\t{}\n'.format(tname, session.table('RAW_CUSTOMER.{}'.format(tname)).columns))
+        print(f"{tname}: \n\t{session.table(f'RAW_CUSTOMER.{tname}').columns}\n")
 
 
 # For local debugging

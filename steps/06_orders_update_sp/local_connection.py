@@ -25,7 +25,7 @@ def get_dev_config(
             k.replace('name', ''): v.strip('"')
             for k, v in session_config.items()
         }
-        session_config_dict.update(app_config.get(environment))  # type: ignore
+        session_config_dict |= app_config.get(environment)
         return session_config_dict
     except Exception:
         raise Exception(
